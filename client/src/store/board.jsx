@@ -23,4 +23,17 @@ export const useBoard = create((set) => ({
       return { board: newBoard };
     });
   },
+  setToDefault: () => {
+    set({
+      board: [
+        [null, null, null, null, null, null],
+        [null, null, null, null, null, null],
+        [null, null, null, null, null, null],
+        [null, null, null, null, null, null],
+        [null, null, null, null, null, null],
+        [null, null, null, null, null, null],
+        [null, null, null, null, null, null],
+      ],
+    });
+  },
 }));
