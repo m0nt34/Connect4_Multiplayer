@@ -3,7 +3,6 @@ import { resultFunction } from "./resultFunction";
 
 export const checkMove = () => {
   const { board } = useBoard.getState();
-  console.log(board);
 
   for (let c = 0; c <= 3; c++) {
     for (let r = 0; r < 6; r++) {

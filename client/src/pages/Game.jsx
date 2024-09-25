@@ -3,7 +3,7 @@ import Board from "../components/Board";
 import DisplayTurn from "../components/DisplayTurn";
 import { connectSocket, disconnectSocket } from "../services/socket";
 import Menu from "../components/menu/Menu";
-import { GameEnd } from "../components/GameEnd";
+import { GameEnd } from "../components/resultPopup/GameEnd";
 
 const Game = () => {
   useEffect(() => {

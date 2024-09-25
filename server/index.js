@@ -22,7 +22,7 @@ io.on("connection", (socket) => {
   users += 1;
   io.emit("user_count", users);
   socket.on("get_count", () => {
-    socket.emit("user_count", users); 
+    socket.emit("user_count", users);
   });
   socket.on("join_line", () => {
     waitingLine.push(socket.id);
@@ -55,6 +55,7 @@ io.on("connection", (socket) => {
     const currentRoom = rooms[room];
 
     if (currentRoom) {
+      
       const { user1, user2, currentTurn } = currentRoom;
       if (currentTurn === socket.id) {
         const opponentID = currentTurn === user1 ? user2 : user1;
@@ -63,11 +64,71 @@ io.on("connection", (socket) => {
       }
     }
   });
+  socket.on("offer_rematch", (room) => {
+    const currentRoom = rooms[room];
+    if (currentRoom) {
+      const { user1, user2 } = currentRoom;
+      const opponentID = user1 === socket.id ? user2 : user1;
+      io.to(opponentID).emit("get_rematch_offer");
+    } else {
+      socket.emit("get_rematch_offer_decline", {
+        message: "Opponent has already left the room",
+      });
+    }
+  });
+  socket.on("send_decline_offer", (room) => {
+    const currentRoom = rooms[room];
+    if (currentRoom) {
+      const { user1, user2 } = currentRoom;
+      const opponentID = user1 === socket.id ? user2 : user1;
+      io.to(opponentID).emit("get_rematch_offer_decline", {
+        message: "Your rematch offer was declined",
+      });
+      delete rooms[currentRoom];
+    }
+  });
+  socket.on("send_accept_offer", (room) => {
+    const currentRoom = rooms[room];
+    
+    if (currentRoom) {
+      
+      const { user1, user2 } = currentRoom;
+      const opponentID = user1 === socket.id ? user2 : user1;
+      io.to(opponentID).emit("get_rematch_offer_accepted");
+    } else {
+      socket.emit("get_rematch_offer_decline", {
+        message: "Opponent has already left the room",
+      });
+    }
+  });
+  socket.on("delete_room", (room) => {
+    const roomToDelete = rooms[room];
+    if (roomToDelete) {
+      delete rooms[room];
+    }
+  });
   socket.on("disconnect", () => {
     console.log("disconnected", socket.id);
     users -= 1;
-
     io.emit("user_count", users);
+
+    let roomToRemove;
+    for (const [room, { user1, user2 }] of Object.entries(rooms)) {
+      if (user1 === socket.id || user2 === socket.id) {
+        roomToRemove = room;
+        break;
+      }
+    }
+    if (roomToRemove) {
+      const { user1, user2 } = rooms[roomToRemove];
+      const opponentID = user1 === socket.id ? user2 : user1;
+      io.to(opponentID).emit("opponent_disconnected");
+      delete rooms[roomToRemove];
+    }
+    const indexOfUser = waitingLine.findIndex((user) => user === socket.id);
+    if (indexOfUser !== -1) {
+      waitingLine.splice(indexOfUser, 1);
+    }
   });
 });
 server.listen(3000, () => console.log(`Server running on port 3000`));

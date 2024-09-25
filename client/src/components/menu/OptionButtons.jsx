@@ -8,8 +8,11 @@ import {
 import { useMyChips } from "../../store/myChips";
 import { useGame } from "../../store/gameStarted";
 import { useRoom } from "../../store/room";
+import CheckMark from "../../assets/SVG/CheckMark";
+import { startGameAudio } from "../../utils/gameStartAudio";
 const OptionButtons = () => {
   const [loading, setLoading] = useState(false);
+  const [roomAssigned, setRoomAssigned] = useState(false);
   const { seMyChipsBlue } = useMyChips();
   const { setGameStartedToT } = useGame();
   const { setRoom } = useRoom();
@@ -23,9 +26,14 @@ const OptionButtons = () => {
   };
   useEffect(() => {
     listenToEvent("room-assigned", (data) => {
+      startGameAudio();
+      setLoading(false);
+      setRoomAssigned(true);
       seMyChipsBlue(data.yourTurn);
       setRoom(data.room);
-      setGameStartedToT();
+      setTimeout(() => {
+        setGameStartedToT();
+      }, 2000);
     });
 
     return () => {
@@ -37,17 +45,15 @@ const OptionButtons = () => {
       <div className="flex items-center justify-center gap-4 flex-nowrap">
         <button
           onClick={handleSearch}
-          disabled={loading}
+          disabled={loading || roomAssigned}
           className="bg-[#144891] px-4 py-1 rounded-sm shadow-md hover:opacity-90 transition"
         >
-          {" "}
-          Find Player{" "}
+          Find Player
         </button>
         <button
-          disabled={loading}
+          disabled={loading || roomAssigned}
           className="bg-[#144891] px-4 py-1 rounded-sm shadow-md hover:opacity-90 transition"
         >
-          {" "}
           Invite A Friend
         </button>
       </div>
@@ -59,9 +65,16 @@ const OptionButtons = () => {
             onClick={handleLeaveLine}
             className="bg-[#144891] px-4 py-1 rounded-sm shadow-md hover:opacity-90 transition"
           >
-            {" "}
             Leave Queue
           </button>
+        </div>
+      )}
+      {roomAssigned && (
+        <div className="flex flex-col items-center justify-center w-full mt-4 gap-2 select-none">
+          <CheckMark className="h-7" />
+          <span className="text-lg text-slate-300">
+            Player joined! Game is starting...
+          </span>
         </div>
       )}
     </>
