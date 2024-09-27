@@ -3,6 +3,7 @@ import http from "http";
 import cors from "cors";
 import { Server } from "socket.io";
 import { truncate } from "fs";
+import { generateRoomId } from "./utils/generateID.js";
 
 const app = express();
 
@@ -18,6 +19,7 @@ const io = new Server(server, {
 var users = 0;
 const waitingLine = [];
 const rooms = {};
+const PrivateRooms = {};
 io.on("connection", (socket) => {
   users += 1;
   io.emit("user_count", users);
@@ -31,7 +33,8 @@ io.on("connection", (socket) => {
       const user2 = waitingLine.shift();
 
       const room = `${user1}-${user2}`;
-      socket.join(room);
+      io.sockets.sockets.get(user1)?.join(room);
+      io.sockets.sockets.get(user2)?.join(room);
       rooms[room] = { user1, user2, currentTurn: user1 };
 
       io.to(user1).emit("room-assigned", {
@@ -55,7 +58,6 @@ io.on("connection", (socket) => {
     const currentRoom = rooms[room];
 
     if (currentRoom) {
-      
       const { user1, user2, currentTurn } = currentRoom;
       if (currentTurn === socket.id) {
         const opponentID = currentTurn === user1 ? user2 : user1;
@@ -84,14 +86,13 @@ io.on("connection", (socket) => {
       io.to(opponentID).emit("get_rematch_offer_decline", {
         message: "Your rematch offer was declined",
       });
-      delete rooms[currentRoom];
+      delete rooms[room];
     }
   });
   socket.on("send_accept_offer", (room) => {
     const currentRoom = rooms[room];
-    
+
     if (currentRoom) {
-      
       const { user1, user2 } = currentRoom;
       const opponentID = user1 === socket.id ? user2 : user1;
       io.to(opponentID).emit("get_rematch_offer_accepted");
@@ -107,6 +108,25 @@ io.on("connection", (socket) => {
       delete rooms[room];
     }
   });
+  socket.on("create_private_room", () => {
+    const newPR = generateRoomId();
+    if (!PrivateRooms[newPR]) {
+      PrivateRooms[newPR] = { creator: socket.id };
+      socket.emit("get_privat_room_id", newPR);
+    }
+  });
+  socket.on("delete_private_room", (room) => {
+    if (PrivateRooms[room]) {
+      delete PrivateRooms[room];
+    }
+  });
+  socket.on("check_room", (room) => {
+    if (PrivateRooms[room]) {
+      io.to(PrivateRooms[room].creator).emit("join_private_room");
+    } else {
+      socket.emit("private_room_is_not_valid");
+    }
+  });
   socket.on("disconnect", () => {
     console.log("disconnected", socket.id);
     users -= 1;
@@ -119,11 +139,25 @@ io.on("connection", (socket) => {
         break;
       }
     }
+
     if (roomToRemove) {
       const { user1, user2 } = rooms[roomToRemove];
       const opponentID = user1 === socket.id ? user2 : user1;
+
       io.to(opponentID).emit("opponent_disconnected");
       delete rooms[roomToRemove];
+    }
+    let privateroomToRemove;
+
+    for (const [room, { creator }] of Object.entries(PrivateRooms)) {
+      if (creator === socket.id) {
+        privateroomToRemove = room;
+
+        break;
+      }
+    }
+    if (privateroomToRemove) {
+      delete PrivateRooms[privateroomToRemove];
     }
     const indexOfUser = waitingLine.findIndex((user) => user === socket.id);
     if (indexOfUser !== -1) {

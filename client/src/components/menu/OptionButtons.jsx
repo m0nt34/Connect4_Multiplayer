@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Spinner from "../../assets/SVG/Spinner";
 import {
   emitEvent,
@@ -10,12 +10,16 @@ import { useGame } from "../../store/gameStarted";
 import { useRoom } from "../../store/room";
 import CheckMark from "../../assets/SVG/CheckMark";
 import { startGameAudio } from "../../utils/gameStartAudio";
+import CreatePrivateRoom from "./CreatePrivateRoom";
+
 const OptionButtons = () => {
   const [loading, setLoading] = useState(false);
+  const [waitingFriend, setWaitingFriend] = useState(false);
   const [roomAssigned, setRoomAssigned] = useState(false);
   const { seMyChipsBlue } = useMyChips();
   const { setGameStartedToT } = useGame();
   const { setRoom } = useRoom();
+
   const handleSearch = () => {
     setLoading(true);
     emitEvent("join_line");
@@ -40,18 +44,23 @@ const OptionButtons = () => {
       removeListener("room-assigned");
     };
   }, []);
+  const handleFriendInvite = () => {
+    emitEvent("create_private_room");
+    setWaitingFriend(true);
+  };
   return (
     <>
       <div className="flex items-center justify-center gap-4 flex-nowrap">
         <button
           onClick={handleSearch}
-          disabled={loading || roomAssigned}
+          disabled={loading || roomAssigned || waitingFriend}
           className="bg-[#144891] px-4 py-1 rounded-sm shadow-md hover:opacity-90 transition"
         >
           Find Player
         </button>
         <button
-          disabled={loading || roomAssigned}
+          onClick={handleFriendInvite}
+          disabled={loading || roomAssigned || waitingFriend}
           className="bg-[#144891] px-4 py-1 rounded-sm shadow-md hover:opacity-90 transition"
         >
           Invite A Friend
@@ -68,6 +77,9 @@ const OptionButtons = () => {
             Leave Queue
           </button>
         </div>
+      )}
+      {waitingFriend && (
+        <CreatePrivateRoom setWaitingFriend={setWaitingFriend} />
       )}
       {roomAssigned && (
         <div className="flex flex-col items-center justify-center w-full mt-4 gap-2 select-none">

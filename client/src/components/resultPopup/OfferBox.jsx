@@ -1,30 +1,20 @@
 import React, { useEffect, useState } from "react";
-import {
-  listenToEvent,
-  removeListener,
-  emitEvent,
-} from "../../services/socket";
+import { listenToEvent, removeListener, emitEvent } from "../../services/socket";
 import Spinner from "../../assets/SVG/Spinner";
 import ArrowsCClockWise from "../../assets/SVG/ArrowsCClockWise";
 import Back from "../../assets/SVG/Back";
-import { useGameEnd } from "../../store/gameEnd";
 import { useRoom } from "../../store/room";
 import { resetGame } from "../../utils/resetGame";
 import CheckMark from "../../assets/SVG/CheckMark";
 import XMark from "../../assets/SVG/XMark";
 import { rematchFunc } from "../../utils/rematchFunction";
+import { useResultText } from "../../store/resultText";
 const OfferBox = () => {
-  const { setGameEndedToT, setWinner } = useGameEnd();
   const [sendOffer, setSendOffer] = useState(false);
   const [getOffer, setGetOffer] = useState(false);
   const { room } = useRoom();
-  const [text, setText] = useState("");
+  const { text, setText } = useResultText();
   useEffect(() => {
-    listenToEvent("opponent_disconnected", () => {
-      setText("Your opponent left the game");
-      setWinner(myChipsBlue);
-      setGameEndedToT();
-    });
     listenToEvent("get_rematch_offer", () => {
       setText("You received a rematch request");
       setGetOffer(true);
@@ -39,12 +29,11 @@ const OfferBox = () => {
     });
 
     return () => {
-      removeListener("opponent_disconnected");
       removeListener("get_rematch_offer");
       removeListener("get_rematch_offer_decline");
       removeListener("get_rematch_offer_accepted");
     };
-  });
+  }, [room]);
   const handleOfferSend = () => {
     emitEvent("offer_rematch", room);
     setText("Waiting for response of opponet");
@@ -76,7 +65,11 @@ const OfferBox = () => {
             Accept
           </button>
           <button
-            onClick={() => {emitEvent("send_decline_offer", room);setGetOffer(false);setText("You declined rematch offer")}}
+            onClick={() => {
+              emitEvent("send_decline_offer", room);
+              setGetOffer(false);
+              setText("You declined rematch offer");
+            }}
             className="flex items-center justify-center gap-2 bg-[#144891] px-4 py-1 rounded-sm shadow-md hover:opacity-90 transition"
           >
             <XMark className={"h-5"} />
