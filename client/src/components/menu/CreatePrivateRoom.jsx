@@ -32,7 +32,8 @@ const CreatePrivateRoom = ({ setWaitingFriend }) => {
   useEffect(() => {
     listenToEvent("get_privat_room_id", (room) => {
       setRoom(room);
-      setInputValue(`http://localhost:5173/join?id=${room}`);
+      const currentUrl = `${window.location.origin}/join?id=${room}`;
+      setInputValue(currentUrl);
     });
     return () => {
       removeListener("get_privat_room_id");

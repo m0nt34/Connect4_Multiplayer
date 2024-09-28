@@ -47,7 +47,7 @@ const OfferBox = () => {
         </div>
       )}
       {text.length !== 0 && (
-        <div className="flex w-full justify-center text-slate-300 text-lg">
+        <div className="flex w-full items-center justify-center text-center text-slate-300 text-lg">
           {text}
         </div>
       )}

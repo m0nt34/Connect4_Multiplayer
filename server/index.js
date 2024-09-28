@@ -106,6 +106,7 @@ io.on("connection", (socket) => {
     const roomToDelete = rooms[room];
     if (roomToDelete) {
       delete rooms[room];
+      delete PrivateRooms[room];
     }
   });
   socket.on("create_private_room", () => {
@@ -122,13 +123,19 @@ io.on("connection", (socket) => {
   });
   socket.on("check_room", (room) => {
     if (PrivateRooms[room]) {
-      io.to(PrivateRooms[room].creator).emit("join_private_room");
+      io.to(PrivateRooms[room].creator).emit("join_private_room", true);
+      socket.emit("join_private_room", false); 
+      const user1 = PrivateRooms[room].creator;
+      const user2 = socket.id;
+      io.sockets.sockets.get(user1)?.join(room);
+      io.sockets.sockets.get(user2)?.join(room);
+      rooms[room] = { user1, user2, currentTurn: user1 };
     } else {
       socket.emit("private_room_is_not_valid");
     }
   });
   socket.on("disconnect", () => {
-    console.log("disconnected", socket.id);
+    //console.log("disconnected", socket.id);
     users -= 1;
     io.emit("user_count", users);
 
@@ -165,4 +172,4 @@ io.on("connection", (socket) => {
     }
   });
 });
-server.listen(3000, () => console.log(`Server running on port 3000`));
+server.listen(3000, () => {});

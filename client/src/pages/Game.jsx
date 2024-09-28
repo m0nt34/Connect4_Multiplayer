@@ -13,13 +13,18 @@ import { GameEnd } from "../components/resultPopup/GameEnd";
 import { useMyChips } from "../store/myChips";
 import { useGameEnd } from "../store/gameEnd";
 import { useResultText } from "../store/resultText";
-import { useLocation, useSearchParams } from "react-router-dom";
-
+import { useLocation, useSearchParams, useNavigate } from "react-router-dom";
+import { handleJoinPrivateRoom } from "../utils/handleJoinPrivateRoom";
+import { handlePRNValid } from "../utils/privateRoomNotValid";
+import { useRoom } from "../store/room";
 const Game = () => {
   const location = useLocation();
+  const navigate = useNavigate();
+
   const [searchParams] = useSearchParams();
   const { setGameEndedToT, setWinner } = useGameEnd();
   const { setText } = useResultText();
+  const { setRoom } = useRoom();
   const { myChipsBlue } = useMyChips();
   useEffect(() => {
     connectSocket();
@@ -30,17 +35,26 @@ const Game = () => {
     };
     if (checkIfPrivate()) {
       const roomId = searchParams.get("id");
-      emitEvent("check_room", roomId);
+      console.log(roomId);
+      if (performance.getEntriesByType("navigation")[0].type === "reload") {
+        navigate("/", { replace: true });
+      } else {
+        setRoom(roomId);
+        emitEvent("check_room", roomId);
+      }
     }
-    
+
     listenToEvent("opponent_disconnected", handleOpponentDisconnected);
-    
+    listenToEvent("join_private_room", handleJoinPrivateRoom);
+    listenToEvent("private_room_is_not_valid", handlePRNValid);
+
     return () => {
       removeListener("opponent_disconnected", handleOpponentDisconnected);
+      removeListener("join_private_room", handleJoinPrivateRoom);
+      removeListener("private_room_is_not_valid", handlePRNValid);
       disconnectSocket();
     };
   }, []);
-  console.log("rerendered");
   const checkIfPrivate = () => {
     const pathname = location.pathname;
     return pathname.endsWith("/join");
