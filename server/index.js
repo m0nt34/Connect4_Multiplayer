@@ -11,7 +11,11 @@ const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:5173",
+    origin: [
+      "",
+      "https://connect4-multiplayer.onrender.com",
+      "http://localhost:5173",
+    ],
     methods: ["GET", "POST"],
     credentials: true,
   },
@@ -124,7 +128,7 @@ io.on("connection", (socket) => {
   socket.on("check_room", (room) => {
     if (PrivateRooms[room]) {
       io.to(PrivateRooms[room].creator).emit("join_private_room", true);
-      socket.emit("join_private_room", false); 
+      socket.emit("join_private_room", false);
       const user1 = PrivateRooms[room].creator;
       const user2 = socket.id;
       io.sockets.sockets.get(user1)?.join(room);
@@ -135,7 +139,6 @@ io.on("connection", (socket) => {
     }
   });
   socket.on("disconnect", () => {
-    //console.log("disconnected", socket.id);
     users -= 1;
     io.emit("user_count", users);
 
