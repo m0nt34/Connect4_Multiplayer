@@ -12,7 +12,7 @@ const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
     origin: [
-      "",
+      "https://connect4-multiplayer.netlify.app",
       "https://connect4-multiplayer.onrender.com",
       "http://localhost:5173",
     ],
